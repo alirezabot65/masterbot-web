@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پلتفرم مدیریت گروه MASTERBOT</title>
+    <style>
+        * { box-sizing: border-box; font-family: Tahoma, sans-serif; }
+        body { background: #0f172a; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: #1e293b; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; }
+        h2 { color: #38bdf8; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #fff; text-align: center; font-size: 16px; }
+        button { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #0284c7; color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #0369a1; }
+        .hidden { display: none; }
+        #status { margin-top: 15px; font-size: 14px; color: #f31260; word-break: break-word; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🚀 ورود به MASTERBOT</h2>
+    <p>برای فعال‌سازی ربات، شماره خود را وارد کنید:</p>
+
+    <div id="step-phone">
+        <input type="tel" id="phone" placeholder="09123456789">
+        <button onclick="sendCode()">ارسال کد ورود</button>
+    </div>
+
+    <div id="step-code" class="hidden">
+        <input type="text" id="code" placeholder="کد ۵ رقمی روبیکا">
+        <button onclick="verifyCode()">تایید و فعال‌سازی ربات</button>
+    </div>
+
+    <div id="status"></div>
+</div>
+
+<script>
+    let phoneCodeHash = "";
+
+    async function sendCode() {
+        const phone = document.getElementById("phone").value.trim();
+        if (!phone) return alert("لطفا شماره را وارد کنید.");
+
+        document.getElementById("status").innerText = "در حال ارسال کد...";
+        
+        try {
+            const res = await fetch('/api/send-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone_number: phone })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                phoneCodeHash = data.phone_code_hash;
+                document.getElementById("step-phone").classList.add("hidden");
+                document.getElementById("step-code").classList.remove("hidden");
+                document.getElementById("status").style.color = "#38bdf8";
+                document.getElementById("status").innerText = "کد ۵ رقمی به روبیکای شما فرستاده شد.";
+            } else {
+                document.getElementById("status").style.color = "#f31260";
+                document.getElementById("status").innerText = data.detail || "خطا در ارسال کد.";
+            }
+        } catch (err) {
+            document.getElementById("status").style.color = "#f31260";
+            document.getElementById("status").innerText = "خطا در ارتباط با سرور.";
+        }
+    }
+
+    async function verifyCode() {
+        const phone = document.getElementById("phone").value.trim();
+        const code = document.getElementById("code").value.trim();
+
+        document.getElementById("status").innerText = "در حال بررسی کد...";
+
+        try {
+            const res = await fetch('/api/verify-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    phone_number: phone,
+                    phone_code_hash: phoneCodeHash,
+                    user_code: code
+                })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                document.getElementById("status").style.color = "#10b981";
+                document.getElementById("status").innerText = "✅ ورود موفقیت‌آمیز بود! ربات شما روی گروه‌ها فعال شد.";
+            } else {
+                document.getElementById("status").style.color = "#f31260";
+                document.getElementById("status").innerText = data.detail || "کد اشتباه است.";
+            }
+        } catch (err) {
+            document.getElementById("status").style.color = "#f31260";
+            document.getElementById("status").innerText = "خطا در تایید کد.";
+        }
+    }
+</script>
+
+</body>
+</html>
